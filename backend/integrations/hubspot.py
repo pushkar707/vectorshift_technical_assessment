@@ -15,7 +15,7 @@ load_dotenv()
 CLIENT_ID = os.environ.get('HUBSPOT_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('HUBSPOT_CLIENT_SECRET')
 REDIRECT_URI = f"{os.environ.get('ROOT_DOMAIN')}/integrations/hubspot/oauth2callback"
-scope = "oauth%20external_integrations.forms.access"
+scope = "oauth%20crm.lists.read%20crm.lists.write"
 authorization_url = f"https://app.hubspot.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope={scope}"
 
 
@@ -79,8 +79,13 @@ async def oauth2callback_hubspot(request: Request):
 
 
 async def get_hubspot_credentials(user_id, org_id):
-    # TODO
-    pass
+    credentials = await get_value_redis(f'hubspot_credentials:{org_id}:{user_id}')
+    if not credentials:
+        raise HTTPException(status_code=400, detail='No credentials found.')
+    credentials = json.loads(credentials)
+    await delete_key_redis(f'hubspot_credentials:{org_id}:{user_id}')
+
+    return credentials
 
 
 async def create_integration_item_metadata_object(response_json):
