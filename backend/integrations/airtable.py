@@ -9,6 +9,7 @@ import httpx
 import asyncio
 import base64
 import hashlib
+from typing import List
 
 import requests
 from integrations.integration_item import IntegrationItem
@@ -22,8 +23,10 @@ CLIENT_SECRET = 'e59aec7edddef2edf4388ef611b151ab5fc85c61f828df909c147085e8ffb4f
 REDIRECT_URI = 'http://localhost:8000/integrations/airtable/oauth2callback'
 authorization_url = f'https://airtable.com/oauth2/v1/authorize?client_id={CLIENT_ID}&response_type=code&owner=user&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fintegrations%2Fairtable%2Foauth2callback'
 
-encoded_client_id_secret = base64.b64encode(f'{CLIENT_ID}:{CLIENT_SECRET}'.encode()).decode()
+encoded_client_id_secret = base64.b64encode(
+    f'{CLIENT_ID}:{CLIENT_SECRET}'.encode()).decode()
 scope = 'data.records:read data.records:write data.recordComments:read data.recordComments:write schema.bases:read schema.bases:write'
+
 
 async def authorize_airtable(user_id, org_id):
     state_data = {
@@ -31,27 +34,34 @@ async def authorize_airtable(user_id, org_id):
         'user_id': user_id,
         'org_id': org_id
     }
-    encoded_state = base64.urlsafe_b64encode(json.dumps(state_data).encode('utf-8')).decode('utf-8')
+    encoded_state = base64.urlsafe_b64encode(
+        json.dumps(state_data).encode('utf-8')).decode('utf-8')
 
     code_verifier = secrets.token_urlsafe(32)
     m = hashlib.sha256()
     m.update(code_verifier.encode('utf-8'))
-    code_challenge = base64.urlsafe_b64encode(m.digest()).decode('utf-8').replace('=', '')
+    code_challenge = base64.urlsafe_b64encode(
+        m.digest()).decode('utf-8').replace('=', '')
 
     auth_url = f'{authorization_url}&state={encoded_state}&code_challenge={code_challenge}&code_challenge_method=S256&scope={scope}'
     await asyncio.gather(
-        add_key_value_redis(f'airtable_state:{org_id}:{user_id}', json.dumps(state_data), expire=600),
-        add_key_value_redis(f'airtable_verifier:{org_id}:{user_id}', code_verifier, expire=600),
+        add_key_value_redis(
+            f'airtable_state:{org_id}:{user_id}', json.dumps(state_data), expire=600),
+        add_key_value_redis(
+            f'airtable_verifier:{org_id}:{user_id}', code_verifier, expire=600),
     )
 
     return auth_url
 
+
 async def oauth2callback_airtable(request: Request):
     if request.query_params.get('error'):
-        raise HTTPException(status_code=400, detail=request.query_params.get('error_description'))
+        raise HTTPException(
+            status_code=400, detail=request.query_params.get('error_description'))
     code = request.query_params.get('code')
     encoded_state = request.query_params.get('state')
-    state_data = json.loads(base64.urlsafe_b64decode(encoded_state).decode('utf-8'))
+    state_data = json.loads(base64.urlsafe_b64decode(
+        encoded_state).decode('utf-8'))
 
     original_state = state_data.get('state')
     user_id = state_data.get('user_id')
@@ -86,7 +96,7 @@ async def oauth2callback_airtable(request: Request):
         )
 
     await add_key_value_redis(f'airtable_credentials:{org_id}:{user_id}', json.dumps(response.json()), expire=600)
-    
+
     close_window_script = """
     <html>
         <script>
@@ -96,6 +106,7 @@ async def oauth2callback_airtable(request: Request):
     """
     return HTMLResponse(content=close_window_script)
 
+
 async def get_airtable_credentials(user_id, org_id):
     credentials = await get_value_redis(f'airtable_credentials:{org_id}:{user_id}')
     if not credentials:
@@ -104,6 +115,7 @@ async def get_airtable_credentials(user_id, org_id):
     await delete_key_redis(f'airtable_credentials:{org_id}:{user_id}')
 
     return credentials
+
 
 def create_integration_item_metadata_object(
     response_json: str, item_type: str, parent_id=None, parent_name=None
@@ -141,7 +153,7 @@ def fetch_items(
             return
 
 
-async def get_items_airtable(credentials) -> list[IntegrationItem]:
+async def get_items_airtable(credentials) -> List[IntegrationItem]:
     credentials = json.loads(credentials)
     url = 'https://api.airtable.com/v0/meta/bases'
     list_of_integration_item_metadata = []
@@ -154,7 +166,8 @@ async def get_items_airtable(credentials) -> list[IntegrationItem]:
         )
         tables_response = requests.get(
             f'https://api.airtable.com/v0/meta/bases/{response.get("id")}/tables',
-            headers={'Authorization': f'Bearer {credentials.get("access_token")}'},
+            headers={
+                'Authorization': f'Bearer {credentials.get("access_token")}'},
         )
         if tables_response.status_code == 200:
             tables_response = tables_response.json()
@@ -168,5 +181,6 @@ async def get_items_airtable(credentials) -> list[IntegrationItem]:
                     )
                 )
 
-    print(f'list_of_integration_item_metadata: {list_of_integration_item_metadata}')
+    print(
+        f'list_of_integration_item_metadata: {list_of_integration_item_metadata}')
     return list_of_integration_item_metadata
