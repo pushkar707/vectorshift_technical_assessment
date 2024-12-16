@@ -1,17 +1,22 @@
 # slack.py
 
+import asyncio
+import httpx
+from fastapi.responses import HTMLResponse
+from http.client import HTTPException
 import secrets
 import json
 import os
-from redis_client import add_key_value_redis
+from redis_client import add_key_value_redis, delete_key_redis, get_value_redis
 from fastapi import Request
 from dotenv import load_dotenv
 load_dotenv()
 
 CLIENT_ID = os.environ.get('HUBSPOT_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('HUBSPOT_CLIENT_SECRET')
-REDIRECT_URI = f"{os.environ.get('ROOT_DOMAIN')}/integrations/airtable/oauth2callback"
-authorization_url = f'https://app.hubspot.com/oauth/authorize?client_id={CLIENT_ID}&scope=contacts%20automation&redirect_uri={REDIRECT_URI}'
+REDIRECT_URI = f"{os.environ.get('ROOT_DOMAIN')}/integrations/hubspot/oauth2callback"
+scope = "oauth%20external_integrations.forms.access"
+authorization_url = f"https://app.hubspot.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope={scope}"
 
 
 async def authorize_hubspot(user_id, org_id):
@@ -26,8 +31,51 @@ async def authorize_hubspot(user_id, org_id):
 
 
 async def oauth2callback_hubspot(request: Request):
-    # TODO
-    pass
+    print(request)
+    if request.query_params.get('error'):
+        raise HTTPException(
+            status_code=400, detail=request.query_params.get('error'))
+    code = request.query_params.get('code')
+    encoded_state = request.query_params.get('state')
+    state_data = json.loads(encoded_state)
+
+    original_state = state_data.get('state')
+    user_id = state_data.get('user_id')
+    org_id = state_data.get('org_id')
+
+    saved_state = await get_value_redis(f'hubspot_state:{org_id}:{user_id}')
+
+    if not saved_state or original_state != json.loads(saved_state).get('state'):
+        raise HTTPException(status_code=400, detail='Please login again')
+
+    async with httpx.AsyncClient() as client:
+        response, _ = await asyncio.gather(
+            client.post(
+                'https://api.hubapi.com/oauth/v1/token',
+                headers={
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                data={
+                    'grant_type': 'authorization_code',
+                    'code': code,
+                    'redirect_uri': REDIRECT_URI,
+                    'client_secret': CLIENT_SECRET,
+                    'client_id': CLIENT_ID
+                }
+            ),
+            delete_key_redis(f'hubspot_state:{org_id}:{user_id}'),
+        )
+    print(response)
+    await add_key_value_redis(f'hubspot_credentials:{org_id}:{user_id}', json.dumps(response.json()), expire=600)
+
+    close_window_script = """
+    <html>
+        <script>
+            window.close();
+        </script>
+    </html>
+    """
+    return HTMLResponse(content=close_window_script)
 
 
 async def get_hubspot_credentials(user_id, org_id):
