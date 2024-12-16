@@ -10,6 +10,8 @@ import os
 from redis_client import add_key_value_redis, delete_key_redis, get_value_redis
 from fastapi import Request
 from dotenv import load_dotenv
+import requests
+from integrations.integration_item import IntegrationItem
 load_dotenv()
 
 CLIENT_ID = os.environ.get('HUBSPOT_CLIENT_ID')
@@ -84,15 +86,36 @@ async def get_hubspot_credentials(user_id, org_id):
         raise HTTPException(status_code=400, detail='No credentials found.')
     credentials = json.loads(credentials)
     await delete_key_redis(f'hubspot_credentials:{org_id}:{user_id}')
-
     return credentials
 
 
-async def create_integration_item_metadata_object(response_json):
-    # TODO
-    pass
+def create_integration_item_metadata_object(response_json) -> IntegrationItem:
+    integration_item_metadata = IntegrationItem(
+        id=response_json['listId'],
+        type=response_json['objectTypeId'],
+        name=response_json['objectTypeId'],
+        creation_time=response_json['createdAt'],
+        last_modified_time=response_json['updatedAt'],
+    )
+
+    return integration_item_metadata
 
 
 async def get_items_hubspot(credentials):
-    # TODO
-    pass
+    """Get first 20 lists in app. All Lists API not available"""
+    credentials = json.loads(credentials)
+    url = 'https://api.hubapi.com/crm/v3/lists/?'
+    for i in range(1, 21):
+        url += f'listIds={i}&'
+    lists_response = requests.get(
+        url=url,
+        headers={
+            'Authorization': f'Bearer {credentials.get("access_token")}'},
+    )
+    list_of_integration_item_metadata = []
+    for list in lists_response.json()['lists']:
+        list_of_integration_item_metadata.append(
+            create_integration_item_metadata_object(list))
+
+    print(list_of_integration_item_metadata)
+    return list_of_integration_item_metadata

@@ -5,7 +5,7 @@ import axios from 'axios';
 const endpointMapping = {
   Notion: 'notion',
   Airtable: 'airtable',
-  Hubspot: 'hubspot'
+  Hubspot: 'hubspot',
 };
 
 export const DataForm = ({ integrationType, credentials }) => {
@@ -21,6 +21,8 @@ export const DataForm = ({ integrationType, credentials }) => {
         formData
       );
       const data = response.data;
+      console.log(data);
+
       setLoadedData(data);
     } catch (e) {
       alert(e?.response?.data?.detail);

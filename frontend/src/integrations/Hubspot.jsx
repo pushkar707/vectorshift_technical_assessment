@@ -18,7 +18,6 @@ const Hubspot = ({ user, org, integrationParams, setIntegrationParams }) => {
         `http://localhost:8000/integrations/hubspot/authorize`,
         formData
       );
-      console.log(response);
       const authURL = response?.data;
 
       const newWindow = window.open(
@@ -51,6 +50,7 @@ const Hubspot = ({ user, org, integrationParams, setIntegrationParams }) => {
         formData
       );
       const credentials = response.data;
+      console.log(credentials);
       if (credentials) {
         setIsConnecting(false);
         setIsConnected(true);

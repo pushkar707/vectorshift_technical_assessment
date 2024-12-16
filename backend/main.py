@@ -19,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get('/')
 def read_root():
     return {'Ping': 'Pong'}
@@ -29,13 +30,16 @@ def read_root():
 async def authorize_airtable_integration(user_id: str = Form(...), org_id: str = Form(...)):
     return await authorize_airtable(user_id, org_id)
 
+
 @app.get('/integrations/airtable/oauth2callback')
 async def oauth2callback_airtable_integration(request: Request):
     return await oauth2callback_airtable(request)
 
+
 @app.post('/integrations/airtable/credentials')
 async def get_airtable_credentials_integration(user_id: str = Form(...), org_id: str = Form(...)):
     return await get_airtable_credentials(user_id, org_id)
+
 
 @app.post('/integrations/airtable/load')
 async def get_airtable_items(credentials: str = Form(...)):
@@ -47,31 +51,39 @@ async def get_airtable_items(credentials: str = Form(...)):
 async def authorize_notion_integration(user_id: str = Form(...), org_id: str = Form(...)):
     return await authorize_notion(user_id, org_id)
 
+
 @app.get('/integrations/notion/oauth2callback')
 async def oauth2callback_notion_integration(request: Request):
     return await oauth2callback_notion(request)
 
+
 @app.post('/integrations/notion/credentials')
 async def get_notion_credentials_integration(user_id: str = Form(...), org_id: str = Form(...)):
     return await get_notion_credentials(user_id, org_id)
+
 
 @app.post('/integrations/notion/load')
 async def get_notion_items(credentials: str = Form(...)):
     return await get_items_notion(credentials)
 
 # HubSpot
+
+
 @app.post('/integrations/hubspot/authorize')
 async def authorize_hubspot_integration(user_id: str = Form(...), org_id: str = Form(...)):
     return await authorize_hubspot(user_id, org_id)
+
 
 @app.get('/integrations/hubspot/oauth2callback')
 async def oauth2callback_hubspot_integration(request: Request):
     return await oauth2callback_hubspot(request)
 
+
 @app.post('/integrations/hubspot/credentials')
 async def get_hubspot_credentials_integration(user_id: str = Form(...), org_id: str = Form(...)):
     return await get_hubspot_credentials(user_id, org_id)
 
-@app.post('/integrations/hubspot/get_hubspot_items')
+
+@app.post('/integrations/hubspot/load')
 async def load_slack_data_integration(credentials: str = Form(...)):
     return await get_items_hubspot(credentials)
