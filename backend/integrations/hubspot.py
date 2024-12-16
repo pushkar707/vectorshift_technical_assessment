@@ -1,16 +1,16 @@
 # slack.py
 
+import secrets
+import json
 import os
-from backend.redis_client import add_key_value_redis
+from redis_client import add_key_value_redis
 from fastapi import Request
 from dotenv import load_dotenv
 load_dotenv()
-import json
-import secrets
 
 CLIENT_ID = os.environ.get('HUBSPOT_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('HUBSPOT_CLIENT_SECRET')
-REDIRECT_URI = f'{os.environ.get('ROOT_DOMAIN')}/integrations/airtable/oauth2callback'
+REDIRECT_URI = f"{os.environ.get('ROOT_DOMAIN')}/integrations/airtable/oauth2callback"
 authorization_url = f'https://app.hubspot.com/oauth/authorize?client_id={CLIENT_ID}&scope=contacts%20automation&redirect_uri={REDIRECT_URI}'
 
 
