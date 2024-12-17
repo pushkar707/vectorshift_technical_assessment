@@ -33,7 +33,6 @@ async def authorize_hubspot(user_id, org_id):
 
 
 async def oauth2callback_hubspot(request: Request):
-    print(request)
     if request.query_params.get('error'):
         raise HTTPException(
             status_code=400, detail=request.query_params.get('error'))
@@ -100,6 +99,14 @@ def create_integration_item_metadata_object(response_json) -> IntegrationItem:
     return integration_item_metadata
 
 
+def get_items_hubspot_api(url, access_token):
+    return requests.get(
+        url=url,
+        headers={
+            'Authorization': f'Bearer {access_token}'},
+    )
+
+
 async def get_items_hubspot(credentials):
     """Get first 20 lists in app. All Lists API not available"""
     credentials = json.loads(credentials)
@@ -107,11 +114,8 @@ async def get_items_hubspot(credentials):
     for i in range(1, 21):
         url += f'listIds={i}&'
     lists_response = None
-    lists_response = requests.get(
-        url=url,
-        headers={
-            'Authorization': f'Bearer {credentials.get("access_token")}'},
-    )
+    lists_response = get_items_hubspot_api(
+        url, credentials.get('access_token'))
     if lists_response.status_code == 401 and lists_response.json()['category'] == 'EXPIRED_AUTHENTICATION':
         # Handling expiry of access token
         new_token_response = requests.post(
@@ -127,12 +131,8 @@ async def get_items_hubspot(credentials):
                 'refresh_token': credentials.get("refresh_token")
             },
         )
-        print(new_token_response)
-        lists_response = requests.get(
-            url=url,
-            headers={
-                'Authorization': f'Bearer {new_token_response.json()["access_token"]}'},
-        )
+        lists_response = get_items_hubspot_api(
+            url, new_token_response.json()["access_token"])
     list_of_integration_item_metadata = []
     for list in lists_response.json()['lists']:
         list_of_integration_item_metadata.append(
