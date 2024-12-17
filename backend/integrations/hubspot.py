@@ -67,7 +67,6 @@ async def oauth2callback_hubspot(request: Request):
             ),
             delete_key_redis(f'hubspot_state:{org_id}:{user_id}'),
         )
-    print(response)
     await add_key_value_redis(f'hubspot_credentials:{org_id}:{user_id}', json.dumps(response.json()), expire=600)
 
     close_window_script = """
@@ -107,15 +106,35 @@ async def get_items_hubspot(credentials):
     url = 'https://api.hubapi.com/crm/v3/lists/?'
     for i in range(1, 21):
         url += f'listIds={i}&'
+    lists_response = None
     lists_response = requests.get(
         url=url,
         headers={
             'Authorization': f'Bearer {credentials.get("access_token")}'},
     )
+    if lists_response.status_code == 401 and lists_response.json()['category'] == 'EXPIRED_AUTHENTICATION':
+        # Handling expiry of access token
+        new_token_response = requests.post(
+            url='https://api.hubapi.com/oauth/v1/token',
+            headers={
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            data={
+                'grant_type': 'refresh_token',
+                'redirect_uri': REDIRECT_URI,
+                'client_secret': CLIENT_SECRET,
+                'client_id': CLIENT_ID,
+                'refresh_token': credentials.get("refresh_token")
+            },
+        )
+        print(new_token_response)
+        lists_response = requests.get(
+            url=url,
+            headers={
+                'Authorization': f'Bearer {new_token_response.json()["access_token"]}'},
+        )
     list_of_integration_item_metadata = []
     for list in lists_response.json()['lists']:
         list_of_integration_item_metadata.append(
             create_integration_item_metadata_object(list))
-
-    print(list_of_integration_item_metadata)
     return list_of_integration_item_metadata
