@@ -17,7 +17,7 @@ export const DataForm = ({ integrationType, credentials }) => {
       const formData = new FormData();
       formData.append('credentials', JSON.stringify(credentials));
       const response = await axios.post(
-        `http://localhost:8000/integrations/${endpoint}/load`,
+        `${process.env.REACT_APP_API_KEY}/integrations/${endpoint}/load`,
         formData
       );
       const data = response.data;

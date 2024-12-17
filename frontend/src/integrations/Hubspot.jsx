@@ -15,7 +15,7 @@ const Hubspot = ({ user, org, integrationParams, setIntegrationParams }) => {
       formData.append('user_id', user);
       formData.append('org_id', org);
       const response = await axios.post(
-        `http://localhost:8000/integrations/hubspot/authorize`,
+        `${process.env.REACT_APP_API_KEY}/integrations/hubspot/authorize`,
         formData
       );
       const authURL = response?.data;
@@ -46,7 +46,7 @@ const Hubspot = ({ user, org, integrationParams, setIntegrationParams }) => {
       formData.append('user_id', user);
       formData.append('org_id', org);
       const response = await axios.post(
-        `http://localhost:8000/integrations/hubspot/credentials`,
+        `${process.env.REACT_APP_API_KEY}/integrations/hubspot/credentials`,
         formData
       );
       const credentials = response.data;
