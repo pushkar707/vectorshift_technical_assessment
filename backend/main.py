@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
-
+import os
 from integrations.airtable import authorize_airtable, get_items_airtable, oauth2callback_airtable, get_airtable_credentials
 from integrations.notion import authorize_notion, get_items_notion, oauth2callback_notion, get_notion_credentials
 from integrations.hubspot import authorize_hubspot, get_hubspot_credentials, get_items_hubspot, oauth2callback_hubspot
@@ -9,6 +9,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",  # React app address
+    os.environ.get('ORIGIN_DOMAIN')
 ]
 
 app.add_middleware(
