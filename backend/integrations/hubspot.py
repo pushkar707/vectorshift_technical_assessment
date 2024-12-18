@@ -8,7 +8,7 @@ import secrets
 import json
 import os
 from redis_client import add_key_value_redis, delete_key_redis, get_value_redis
-from utils import close_window_script, fetch_credentials
+from integrations.utils import close_window_script, fetch_credentials
 from fastapi import Request
 from dotenv import load_dotenv
 import requests

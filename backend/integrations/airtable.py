@@ -10,7 +10,7 @@ import asyncio
 import base64
 import hashlib
 from typing import List
-from utils import close_window_script, fetch_credentials
+from integrations.utils import close_window_script, fetch_credentials
 import requests
 from integrations.integration_item import IntegrationItem
 

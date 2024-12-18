@@ -11,7 +11,7 @@ import requests
 from integrations.integration_item import IntegrationItem
 from typing import List
 from redis_client import add_key_value_redis, get_value_redis, delete_key_redis
-from utils import close_window_script, fetch_credentials
+from integrations.utils import close_window_script, fetch_credentials
 
 CLIENT_ID = 'XXX'
 CLIENT_SECRET = 'XXX'
