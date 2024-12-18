@@ -18,7 +18,7 @@ load_dotenv()
 CLIENT_ID = os.environ.get('HUBSPOT_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('HUBSPOT_CLIENT_SECRET')
 REDIRECT_URI = f"{os.environ.get('ROOT_DOMAIN')}/integrations/hubspot/oauth2callback"
-scope = "oauth%20crm.lists.read%20crm.lists.write"
+scope = os.environ.get('HUBSPOT_OAUTH_SCOPE')
 authorization_url = f"https://app.hubspot.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope={scope}"
 
 
