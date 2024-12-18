@@ -10,7 +10,7 @@ import asyncio
 import base64
 import hashlib
 from typing import List
-
+from utils import close_window_script, fetch_credentials
 import requests
 from integrations.integration_item import IntegrationItem
 
@@ -96,25 +96,11 @@ async def oauth2callback_airtable(request: Request):
         )
 
     await add_key_value_redis(f'airtable_credentials:{org_id}:{user_id}', json.dumps(response.json()), expire=600)
-
-    close_window_script = """
-    <html>
-        <script>
-            window.close();
-        </script>
-    </html>
-    """
     return HTMLResponse(content=close_window_script)
 
 
 async def get_airtable_credentials(user_id, org_id):
-    credentials = await get_value_redis(f'airtable_credentials:{org_id}:{user_id}')
-    if not credentials:
-        raise HTTPException(status_code=400, detail='No credentials found.')
-    credentials = json.loads(credentials)
-    await delete_key_redis(f'airtable_credentials:{org_id}:{user_id}')
-
-    return credentials
+    await fetch_credentials('airtable', user_id=user_id, org_id=org_id)
 
 
 def create_integration_item_metadata_object(

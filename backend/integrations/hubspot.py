@@ -3,11 +3,12 @@
 import asyncio
 import httpx
 from fastapi.responses import HTMLResponse
-from http.client import HTTPException
+from fastapi import HTTPException
 import secrets
 import json
 import os
 from redis_client import add_key_value_redis, delete_key_redis, get_value_redis
+from utils import close_window_script, fetch_credentials
 from fastapi import Request
 from dotenv import load_dotenv
 import requests
@@ -68,23 +69,11 @@ async def oauth2callback_hubspot(request: Request):
         )
     await add_key_value_redis(f'hubspot_credentials:{org_id}:{user_id}', json.dumps(response.json()), expire=600)
 
-    close_window_script = """
-    <html>
-        <script>
-            window.close();
-        </script>
-    </html>
-    """
     return HTMLResponse(content=close_window_script)
 
 
 async def get_hubspot_credentials(user_id, org_id):
-    credentials = await get_value_redis(f'hubspot_credentials:{org_id}:{user_id}')
-    if not credentials:
-        raise HTTPException(status_code=400, detail='No credentials found.')
-    credentials = json.loads(credentials)
-    await delete_key_redis(f'hubspot_credentials:{org_id}:{user_id}')
-    return credentials
+    return await fetch_credentials('hubspot', user_id=user_id, org_id=org_id)
 
 
 def create_integration_item_metadata_object(response_json) -> IntegrationItem:

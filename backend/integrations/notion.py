@@ -11,6 +11,7 @@ import requests
 from integrations.integration_item import IntegrationItem
 from typing import List
 from redis_client import add_key_value_redis, get_value_redis, delete_key_redis
+from utils import close_window_script, fetch_credentials
 
 CLIENT_ID = 'XXX'
 CLIENT_SECRET = 'XXX'
@@ -68,27 +69,11 @@ async def oauth2callback_notion(request: Request):
         )
 
     await add_key_value_redis(f'notion_credentials:{org_id}:{user_id}', json.dumps(response.json()), expire=600)
-
-    close_window_script = """
-    <html>
-        <script>
-            window.close();
-        </script>
-    </html>
-    """
     return HTMLResponse(content=close_window_script)
 
 
 async def get_notion_credentials(user_id, org_id):
-    credentials = await get_value_redis(f'notion_credentials:{org_id}:{user_id}')
-    if not credentials:
-        raise HTTPException(status_code=400, detail='No credentials found.')
-    credentials = json.loads(credentials)
-    if not credentials:
-        raise HTTPException(status_code=400, detail='No credentials found.')
-    await delete_key_redis(f'notion_credentials:{org_id}:{user_id}')
-
-    return credentials
+    await fetch_credentials('notion', user_id=user_id, org_id=org_id)  # noqa: F821
 
 
 def _recursive_dict_search(data, target_key):
